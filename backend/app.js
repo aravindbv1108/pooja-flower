@@ -23,9 +23,25 @@ const app = express();
 
 app.use(helmet());
 
+// Allow both local dev and your deployed Vercel frontend.
+// Add more origins here (comma-separated in CLIENT_URL) if you add
+// custom domains later.
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://pooja-flower.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+      // allow requests with no origin (like curl, mobile apps, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS: ' + origin));
+    },
     credentials: true,
   })
 );
@@ -91,17 +107,16 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 
 // ======================================================
-// FRONTEND - SERVE DIST
+// ROOT - simple health message
+// (Frontend is now hosted separately on Vercel, so this
+// backend only needs to serve the API.)
 // ======================================================
 
-const frontendPath = path.join(__dirname, 'dist');
-
-// Serve React static files
-app.use(express.static(frontendPath));
-
-// React SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Pooja Flower API. See /api/health for status.',
+  });
 });
 
 // ======================================================
