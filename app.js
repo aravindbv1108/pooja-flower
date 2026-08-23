@@ -17,50 +17,82 @@ const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
-// Security & core middleware
+// ======================================================
+// SECURITY & CORE MIDDLEWARE
+// ======================================================
+
 app.use(helmet());
+
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
+
 app.use(mongoSanitize());
+
+// ======================================================
+// LOGGING
+// ======================================================
 
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-// Basic rate limiting on auth routes to slow brute force attempts
+// ======================================================
+// RATE LIMITING
+// ======================================================
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
-  message: { success: false, message: 'Too many attempts, please try again later.' },
+  message: {
+    success: false,
+    message: 'Too many attempts, please try again later.',
+  },
 });
+
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Static uploads (logos etc.)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ======================================================
+// STATIC UPLOADS
+// ======================================================
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ success: true, message: 'Pooja Flower API is running.' }));
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, 'uploads'))
+);
 
+// ======================================================
+// HEALTH CHECK
+// ======================================================
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Pooja Flower API is running.',
+  });
 });
 
+// ======================================================
+// API ROUTES
+// ======================================================
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/masters', masterRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+
+// ======================================================
+// 404 + ERROR HANDLING
+// ======================================================
 
 app.use(notFound);
 app.use(errorHandler);
