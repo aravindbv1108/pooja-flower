@@ -1,0 +1,51 @@
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CheckCircle2, Search } from 'lucide-react';
+import { taskApi } from '../api/services';
+import TaskCard from '../components/common/TaskCard';
+import Loader from '../components/common/Loader';
+import EmptyState from '../components/common/EmptyState';
+
+const CompletedTasks = () => {
+  const { t } = useTranslation();
+  const [tasks, setTasks] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const res = await taskApi.list({ status: 'COMPLETED', search });
+    setTasks(res.data.data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line
+  }, [search]);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-gray-800">{t('tasks.completedTasksTitle')}</h2>
+        <div className="relative">
+          <Search className="absolute left-3.5 top-3 text-gray-400" size={18} />
+          <input className="input-field pl-11" placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      </div>
+
+      {loading ? (
+        <Loader />
+      ) : tasks.length === 0 ? (
+        <EmptyState icon={CheckCircle2} title={t('tasks.noCompletedTasks')} />
+      ) : (
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {tasks.map((task) => <TaskCard key={task._id} task={task} />)}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CompletedTasks;
