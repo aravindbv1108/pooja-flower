@@ -69,7 +69,7 @@ app.use(
 );
 
 // ======================================================
-// HEALTH CHECK
+// API HEALTH
 // ======================================================
 
 app.get('/api/health', (req, res) => {
@@ -91,7 +91,21 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 
 // ======================================================
-// 404 + ERROR HANDLING
+// FRONTEND - SERVE DIST
+// ======================================================
+
+const frontendPath = path.join(__dirname, 'dist');
+
+// Serve React static files
+app.use(express.static(frontendPath));
+
+// React SPA fallback
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ======================================================
+// ERROR HANDLING
 // ======================================================
 
 app.use(notFound);
